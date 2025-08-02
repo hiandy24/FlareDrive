@@ -111,43 +111,6 @@ export async function blobDigest(blob: Blob) {
 
 export const SIZE_LIMIT = 100 * 1000 * 1000; // 100MB
 
-function xhrFetch(
-  url: RequestInfo | URL,
-  requestInit: RequestInit & {
-    onUploadProgress?: (progressEvent: ProgressEvent) => void;
-  }
-) {
-  return new Promise<Response>((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.upload.onprogress = requestInit.onUploadProgress ?? null;
-    xhr.open(
-      requestInit.method ?? "GET",
-      url instanceof Request ? url.url : url
-    );
-    const headers = new Headers(requestInit.headers);
-    headers.forEach((value, key) => xhr.setRequestHeader(key, value));
-    xhr.onload = () => {
-      const headers = xhr
-        .getAllResponseHeaders()
-        .trim()
-        .split("\r\n")
-        .reduce((acc, header) => {
-          const [key, value] = header.split(": ");
-          acc[key] = value;
-          return acc;
-        }, {} as Record<string, string>);
-      resolve(new Response(xhr.responseText, { status: xhr.status, headers }));
-    };
-    xhr.onerror = reject;
-    if (
-      requestInit.body instanceof Blob ||
-      typeof requestInit.body === "string"
-    ) {
-      xhr.send(requestInit.body);
-    }
-  });
-}
-
 export async function copyPaste(source: string, target: string, move = false) {
   const uploadUrl = `${WEBDAV_ENDPOINT}${encodeKey(source)}`;
   const destinationUrl = new URL(
@@ -175,7 +138,6 @@ export async function createFolder(cwd: string) {
     console.log(`Create folder failed`);
   }
 }
-
 
 // 添加流式上传函数
 export async function streamUpload(
@@ -233,8 +195,6 @@ export async function streamUpload(
     duplex: 'half'
   });
 }
-
-
 
 // 流式上传单个分片
 async function streamChunk(
